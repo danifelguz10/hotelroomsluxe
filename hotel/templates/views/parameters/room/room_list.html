@@ -1,0 +1,281 @@
+{% extends "adminlte/starter.html" %}
+
+{% block body %}
+{% if messages %}
+  {% for message in messages %}
+      {% if message.tags == 'error' %}
+          <div class="alert alert-danger">
+              <strong>Error:</strong> {{ message }}
+          </div>
+      {% else %}
+          <div class="alert alert-{{ message.tags }}">
+              <strong>{{ message.tags|title }}:</strong> {{ message }}
+          </div>
+      {% endif %}
+  {% endfor %}
+{% endif %}
+  <div class="container">
+    <h1>Habitaciones</h1>
+    <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">Crear Habitacion</a>
+    <br>
+    <br>
+    <table id="example" class="display" style="width:100%">
+      <thead>
+        <tr>
+          <th>Numero</th>
+          <th>Imagen</th>
+          <th>Descripcion</th>
+          <th>Precio</th>
+          <th>Cantidad Personas</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for room, form in product_forms %}
+          <tr>
+            <td>{{ room.number }}</td>
+            <td>
+              {% if room.image %}
+                  <img src="{{ room.image.url }}" alt="Imagen de la habitación" style="max-width: 100px; max-height: 100px;">
+              {% else %}
+                  No hay imagen
+              {% endif %}
+          </td>
+            <td>{{ room.description }}</td>
+            <td>{{ room.price }}</td>
+            <td>{{ room.ammount }}</td>
+            <td>{{ room.state }}</td>
+            <td>
+              <a href="{% url 'hotel:roomdetail' room.pk %}" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#detail{{ room.pk }}">Ver</a>
+              <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ room.pk }}">Editar</button>
+              <!-- Modal de Edición -->
+              <div class="modal fade" id="editModal{{ room.pk }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="editModalLabel">Editar Habitacion</h5>
+                      <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <h1>Editar Habitacion</h1>
+                      <form method="post" class="custom-form" action="{% url 'hotel:roomupdate' room.pk %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <label for="" class="form-label">Numero</label>
+                        <input type="number" class="form-control" value="{{ room.number }}" name="number" aria-describedby="helpId" placeholder="Numero">
+                        <br>
+                        <label for="" class="form-label">Imagen</label>
+                        <input type="file" class="form-control" id="id_image" name="image" accept="image/*" aria-describedby="helpId" placeholder="Imagen">
+                        {% if form.current_image %}
+                            <input type="hidden" name="current_image" value="{{ form.current_image.url }}">
+                        {% endif %}
+                        <label for="" class="form-label">Descripcion</label>
+                        <input type="" class="form-control" value="{{ room.description }}" name="description" aria-describedby="helpId" placeholder="Descripcion">
+                        <br>
+                        <label for="" class="form-label">Precio</label>
+                        <input type="number" class="form-control" value="{{ room.price }}" name="price" aria-describedby="helpId" placeholder="Precio">
+                        <br>
+                        <label for="" class="form-label">Cantidad</label>
+                        <input type="number" class="form-control" value="{{ room.ammount }}" name="ammount" aria-describedby="helpId" placeholder="Cantidad">
+                        <br>
+                        <label for="" class="form-label">Estado</label>
+                        <select class="form-select" name="state" aria-describedby="helpId">
+                            <option value="Disponible" {% if room.state == 'Disponible' %}selected{% endif %}>Disponible</option>
+                            <option value="Ocupado" {% if room.state == 'Ocupado' %}selected{% endif %}>Ocupado</option>
+                            <option value="Deshabilitada" {% if room.state == 'Deshabilitada' %}selected{% endif %}>Deshabilitada</option>
+                        </select>
+                        <br>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-danger" onclick="confirmDelete('{{ room.pk }}')">Eliminar</button>
+          <form id="deleteForm_{{ room.pk }}" action="{% url 'hotel:roomdelete' room.pk %}" method="post">
+            {% csrf_token %}
+          </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+<!-- Modal de Creación de Producto -->
+<div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createModalLabel">Crear Habitacion</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h1>Crear Habitacion</h1>
+        <form method="post" class="custom-form" action="{% url 'hotel:roomcreate' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="form-group">
+            <div class="form-group">
+              <label for="{{ forms.number.id_for_label }}" class="form-label">{{ forms.number.label_tag }}</label>
+              <input type="{{ forms.number.field.widget.input_type }}" class="form-control" id="{{ forms.number.id_for_label }}" name="{{ forms.number.name }}" value="{{ forms.number.value|default:'' }}" {% if forms.number.field.required %}required{% endif %}>
+            </div>
+
+            <div class="form-group">
+              <label for="{{ forms.image.id_for_label }}" class="form-label">{{ forms.image.label_tag }}</label>
+              <input type="{{ forms.image.field.widget.input_type }}" class="form-control" id="{{ forms.image.id_for_label }}" name="{{ forms.image.name }}" accept="image/*" {% if forms.image.field.required %}required{% endif %}>
+            </div>
+            
+            <div class="form-group">
+              <label for="{{ forms.description.id_for_label }}" class="form-label">{{ forms.description.label_tag }}</label>
+              <input type="{{ forms.description.field.widget.input_type }}" class="form-control" id="{{ forms.description.id_for_label }}" name="{{ forms.description.name }}" value="{{ forms.description.value|default:'' }}" {% if forms.description.field.required %}required{% endif %}>
+            </div>
+            
+            <div class="form-group">
+              <label for="{{ forms.price.id_for_label }}" class="form-label">{{ forms.price.label_tag }}</label>
+              <input type="{{ forms.price.field.widget.input_type }}" class="form-control" id="{{ forms.price.id_for_label }}" name="{{ forms.price.name }}" value="{{ forms.price.value|default:'' }}" {% if forms.price.field.required %}required{% endif %}>
+            </div>
+
+            <div class="form-group">
+              <label for="{{ forms.ammount.id_for_label }}" class="form-label">{{ forms.ammount.label_tag }}</label>
+              <input type="{{ forms.ammount.field.widget.input_type }}" class="form-control" id="{{ forms.ammount.id_for_label }}" name="{{ forms.ammount.name }}" value="{{ forms.ammount.value|default:'' }}" {% if forms.ammount.field.required %}required{% endif %}>
+            </div>
+
+            <div class="form-group">
+              <label for="{{ forms.state.id_for_label }}" class="form-label">{{ forms.state.label_tag }}</label>
+              <select class="form-select" id="{{ forms.state.id_for_label }}" name="{{ forms.state.name }}" {% if forms.state.field.required %}required{% endif %}>
+                <option value="Disponible">Disponible</option>
+                <option value="Ocupado">Ocupado</option>
+                <option value="Deshabilitada">Deshabilitada</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>        
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal de Detalles -->
+{% for room, form in product_forms %}
+<div class="modal fade" id="detail{{ room.pk }}" tabindex="-1" role="dialog" aria-labelledby="detailLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailLabel">Detalles de la Habitacion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" class="custom-form">
+          {% csrf_token %}
+          <h2>{{ room.number }}</h2>
+          {% if room.image %}
+            <img src="{{ room.image.url }}" alt="Imagen de la habitación" style="max-width: 100px; max-height: 100px;">
+          {% else %}
+            No hay imagen
+          {% endif %}
+          <p>Descripción: {{ room.description }}</p>
+          <p>Precio: {{ room.price }}</p>
+          <p>Cantidad de Personas: {{ room.ammount }}</p>
+          <p>Estado: {{ room.state }}</p>
+        </form>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+
+
+
+
+<!-- Modal de Confirmación de Eliminación -->
+{% for room, form in product_forms %}
+<div class="modal fade" id="confirmDelete{{ room.pk }}" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteLabel">Confirmar Eliminación</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>¿Seguro que deseas eliminar la Habitacion "{{ room.number }}"?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form action="{% url 'hotel:roomdelete' room.pk %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+  <script>
+    function confirmDelete(roomId) {
+      // Mostrar SweetAlert para confirmar la eliminación
+      Swal.fire({
+          title: '¿Estás seguro?',
+          text: '¿Quieres eliminar esta habitación?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Sí, eliminar'
+      }).then((result) => {
+          if (result.isConfirmed) {
+              // Obtener el formulario con el ID correcto
+              var form = document.forms['deleteForm_' + roomId];
+
+              // Verificar si se encontró el formulario
+              if (form) {
+                  // Enviar el formulario
+                  form.submit();
+              } else {
+                  console.error('Formulario no encontrado para la habitación ID:', roomId);
+              }
+          }
+      });
+  }
+
+  </script>
+  <script>
+    $(document).ready(function() {
+        $('#example').DataTable( {
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'copy',
+                    className: 'btn btn-custom btn-primary-custom'
+                },
+                {
+                    extend: 'csv',
+                    className: 'btn btn-custom btn-secondary-custom'
+                },
+                {
+                    extend: 'excel',
+                    className: 'btn btn-custom btn-tertiary-custom'
+                },
+                {
+                    extend: 'pdf',
+                    className: 'btn btn-custom btn-danger-custom'
+                },
+                {
+                    extend: 'print',
+                    className: 'btn btn-custom btn-warning-custom'
+                }
+            ]
+        } );
+    } );
+    </script>
+    
+{% endblock %}

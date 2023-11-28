@@ -1,0 +1,172 @@
+{% extends "adminlte/starter.html" %}
+
+{% block body %}
+{% if messages %}
+  {% for message in messages %}
+      {% if message.tags == 'error' %}
+          <div class="alert alert-danger">
+              <strong>Error:</strong> {{ message }}
+          </div>
+      {% else %}
+          <div class="alert alert-{{ message.tags }}">
+              <strong>{{ message.tags|title }}:</strong> {{ message }}
+          </div>
+      {% endif %}
+  {% endfor %}
+{% endif %}
+  <div class="container">
+    <h1>Lista de Reservas</h1>
+    <a class="btn btn-primary" href="{% url 'hotel:home'%}">Reservar Habitaicon</a>
+    <br>
+    <br>
+    <table id="example" class="display" style="width:100%">
+      <thead>
+        <tr>
+          <th>Habitación</th>
+          <th>Usuario</th>
+          <th>Fecha de entrada</th>
+          <th>Fecha de salida</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reservation in reservations %}
+          <tr>
+            <td>{{ reservation.room.number }}</td>
+            <td>{{ reservation.user }}</td>
+            <td>{{ reservation.check_in_date }}</td>
+            <td>{{ reservation.check_out_date }}</td>
+            <td>{{ reservation.status }}</td>
+            <td>
+                <form method="post" action="{% url 'hotel:reservationupdate' reservation.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" id="statusField_{{ reservation.pk }}" value="{{ reservation.status }}">
+                    <button type="submit" class="btn btn-success" onclick="updateStatusAndSubmit('{{ reservation.pk }}', 'Aprobada')">Aprobar</button>
+                    <button type="submit" class="btn btn-danger" onclick="desaprobarReserva('{{ reservation.pk }}', 'Desaprobada')">Desaprobar</button>
+                    <button type="button" class="btn btn-warning" onclick="eliminarReserva('{{ reservation.pk }}')">Eliminar</button>
+                </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <script>
+    function updateStatusAndSubmit(reservaId, nuevoEstado) {
+        // Obtener el campo de estado oculto con el ID correcto
+        var statusField = document.getElementById('statusField_' + reservaId);
+    
+        // Verificar si se encontró el campo de estado
+        if (statusField) {
+            // Actualizar el valor del campo de estado
+            statusField.value = nuevoEstado;
+    
+            // Obtener el formulario con el ID correcto
+            var form = document.forms['reservationForm_' + reservaId];
+    
+            // Verificar si se encontró el formulario
+            if (form) {
+                // Enviar el formulario
+                form.submit();
+            } else {
+                console.error('Formulario no encontrado para la reserva ID:', reservaId);
+            }
+        } else {
+            console.error('Campo de estado no encontrado para la reserva ID:', reservaId);
+        }
+    }
+    
+    function desaprobarReserva(reservaId, nuevoEstado) {
+        // Obtener el campo de estado oculto con el ID correcto
+        var statusField = document.getElementById('statusField_' + reservaId);
+    
+        // Verificar si se encontró el campo de estado
+        if (statusField) {
+            // Actualizar el valor del campo de estado
+            statusField.value = nuevoEstado;
+    
+            // Obtener el formulario con el ID correcto
+            var form = document.forms['reservationForm_' + reservaId];
+    
+            // Verificar si se encontró el formulario
+            if (form) {
+                // Enviar el formulario
+                form.submit();
+            } else {
+                console.error('Formulario no encontrado para la reserva ID:', reservaId);
+            }
+        } else {
+            console.error('Campo de estado no encontrado para la reserva ID:', reservaId);
+        }
+    }
+
+    function eliminarReserva(reservaId) {
+        // Mostrar SweetAlert para confirmar la eliminación
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: '¿Quieres eliminar esta reserva?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Obtener el token CSRF
+                var csrftoken = $('[name=csrfmiddlewaretoken]').val();
+                
+                // Enviar solicitud AJAX para eliminar la reserva
+                $.ajax({
+                    url: '/reservation/delete/' + reservaId + '/',  // Reemplaza con la URL correcta
+                    method: 'POST',
+                    data: {
+                        'pk': reservaId,
+                        'csrfmiddlewaretoken': csrftoken  // Incluir el token CSRF en los datos
+                    },
+                    success: function (data) {
+                        // Lógica después de eliminar la reserva (si es necesario)
+                        console.log('Reserva eliminada:', data);
+                        // Recargar la página o actualizar la tabla
+                        location.reload();
+                    },
+                    error: function (error) {
+                        console.error('Error al eliminar la reserva:', error);
+                    }
+                });
+            }
+        });
+    }
+    
+    </script>
+
+  <script>
+    $(document).ready(function() {
+        $('#example').DataTable( {
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'copy',
+                    className: 'btn btn-custom btn-primary-custom'
+                },
+                {
+                    extend: 'csv',
+                    className: 'btn btn-custom btn-secondary-custom'
+                },
+                {
+                    extend: 'excel',
+                    className: 'btn btn-custom btn-tertiary-custom'
+                },
+                {
+                    extend: 'pdf',
+                    className: 'btn btn-custom btn-danger-custom'
+                },
+                {
+                    extend: 'print',
+                    className: 'btn btn-custom btn-warning-custom'
+                }
+            ]
+        } );
+    } );
+    </script>
+{% endblock %}
